@@ -1,1 +1,4 @@
 * text=auto
+
+# git apply rejects patches whose line endings were converted
+*.patch text eol=lf
