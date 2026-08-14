@@ -22,22 +22,7 @@ foreach ($a in $arch) {
 $CurrentPath = (Get-Location).ProviderPath
 Write-Host "==> Current Path: $CurrentPath"
 
-# Step 1: Apply patches
-#$PatchFiles = Get-ChildItem -Path $CurrentPath -Filter *.patch
-#if ($PatchFiles.Count -gt 0) {
-#    Push-Location "$CurrentPath\vlc"
-#    foreach ($Patch in $PatchFiles) {
-#        Write-Host "Applying patch: $($Patch.Name)"
-#        git am --keep-cr $Patch.FullName 2>$null
-#        if ($LASTEXITCODE -ne 0) {
-#            Write-Host "Patch already applied or failed, skipping..."
-#            git am --abort 2>$null
-#        }
-#    }
-#    Pop-Location
-#} else {
-#    Write-Host "No patch files found."
-#}
+# The fork carries these as commits, so there is nothing to apply here.
 
 # Step 2: Copy revision.txt
 $RevisionFile = Join-Path $CurrentPath "revision.txt"

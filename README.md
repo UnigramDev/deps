@@ -8,13 +8,13 @@ Two of Unigram's native dependencies are impractical to build as part of a norma
 | **webrtc** | needs depot_tools, a ~1.5 hour sync and ~20 GB of disk, for a multi-hour build |
 
 Both change a few times a year at most. This repository holds everything needed to produce them —
-the source-build scripts, the patches, and the packaging scripts — and its releases hold the
-resulting archives. Unigram consumes those through vcpkg overlay ports in
+the source-build scripts, the packaging scripts, and the patches webrtc needs — and its releases
+hold the resulting archives. Unigram consumes those through vcpkg overlay ports in
 `Libraries/vcpkg-ports`, so a contributor never runs any of this: the archives are downloaded on
 demand for the architecture being built, verified by SHA512 and cached.
 
 ```
-libvlc/    build.ps1  plugins-cache.ps1  pack-libvlc.ps1  patches/  VideoLAN.LibVLC.UWP.nuspec
+libvlc/    build.ps1  plugins-cache.ps1  pack-libvlc.ps1  VideoLAN.LibVLC.UWP.nuspec
 webrtc/    build-webrtc.ps1  pack-webrtc.ps1  patches/
 ```
 
@@ -46,8 +46,8 @@ is a local working tree does not satisfy it.
 
 Source: [UnigramDev/vlc](https://github.com/UnigramDev/vlc), branch `unigram-12.7.5`.
 
-1. Build the fork. `build.ps1` runs the VideoLAN Docker image and applies `patches/` to the
-   submodule; it currently expects to run from the Unigram checkout's `Libraries/vlc`.
+1. Build the fork. `build.ps1` runs the VideoLAN Docker image against the fork, which already
+   carries its changes as commits; it currently expects to run from the Unigram checkout's `Libraries/vlc`.
    ```powershell
    .\build.ps1 -arch x64,ARM64
    ```
