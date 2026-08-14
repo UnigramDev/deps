@@ -1,0 +1,40 @@
+# The VLC plugins Unigram loads, out of the ~320 the build produces.
+# Paths are relative to the plugins directory of a built VLC tree.
+# Both architectures ship the same set.
+
+access/libhttp_plugin.dll
+access/libhttps_plugin.dll
+access/libimem_plugin.dll
+audio_filter/libaudio_format_plugin.dll
+audio_filter/libsamplerate_plugin.dll
+audio_filter/libscaletempo_plugin.dll
+audio_filter/libtrivial_channel_mixer_plugin.dll
+audio_filter/libugly_resampler_plugin.dll
+audio_mixer/libfloat_mixer_plugin.dll
+audio_output/libwasapi_plugin.dll
+audio_output/libwinstore_plugin.dll
+codec/libavcodec_plugin.dll
+codec/libd3d11va_plugin.dll
+codec/libdav1d_plugin.dll
+codec/libfaad_plugin.dll
+codec/libflac_plugin.dll
+codec/libmpg123_plugin.dll
+codec/libopus_plugin.dll
+demux/libes_plugin.dll
+demux/libflacsys_plugin.dll
+demux/libmp4_plugin.dll
+demux/libogg_plugin.dll
+demux/libps_plugin.dll
+keystore/libmemory_keystore_plugin.dll
+packetizer/libpacketizer_flac_plugin.dll
+packetizer/libpacketizer_h264_plugin.dll
+packetizer/libpacketizer_mpegaudio_plugin.dll
+packetizer/libpacketizer_mpegvideo_plugin.dll
+stream_filter/libcache_block_plugin.dll
+stream_filter/libcache_read_plugin.dll
+stream_filter/librecord_plugin.dll
+stream_filter/libskiptags_plugin.dll
+text_renderer/libtdummy_plugin.dll
+video_chroma/libswscale_plugin.dll
+video_chroma/libyuvp_plugin.dll
+video_output/libdirect3d11_plugin.dll

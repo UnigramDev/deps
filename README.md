@@ -14,7 +14,7 @@ hold the resulting archives. Unigram consumes those through vcpkg overlay ports 
 demand for the architecture being built, verified by SHA512 and cached.
 
 ```
-libvlc/    build.ps1  pack.ps1  plugins-cache.ps1  VideoLAN.LibVLC.UWP.nuspec
+libvlc/    build.ps1  pack.ps1  plugins-cache.ps1  plugins.txt
 webrtc/    build.ps1  pack.ps1  patches/
 ```
 
@@ -57,8 +57,8 @@ Source: [UnigramDev/vlc](https://github.com/UnigramDev/vlc), branch `unigram-12.
    .\libvlc\pack.ps1 -VlcDir <unigram>\Libraries\vlc -Arch x64   -Version 3.0.23 -OutFile libvlc-3.0.23-x64-uwp.zip
    .\libvlc\pack.ps1 -VlcDir <unigram>\Libraries\vlc -Arch arm64 -Version 3.0.23 -OutFile libvlc-3.0.23-arm64-uwp.zip
    ```
-   The file list is read from `VideoLAN.LibVLC.UWP.nuspec`: the curated plugin set plus the
-   generated `plugins.dat` cache. It is not duplicated in the script.
+   Headers, import libraries and the two DLLs are taken wholesale from the built tree. The only
+   selection is `plugins.txt`: the build produces about 320 plugins and Unigram loads 36.
 4. Create the release, attach both archives, and record the commit.
 5. Update the SHA512s in Unigram's `Libraries/vcpkg-ports/libvlc/portfile.cmake`.
 
