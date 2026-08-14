@@ -1,8 +1,8 @@
 # Fetches, patches and builds WebRTC for UWP from the UnigramDev/webrtc-uwp fork.
 #
-#   .\build-webrtc.ps1                                   # everything, into C:\webrtc
-#   .\build-webrtc.ps1 -Arch x64 -Configuration Release  # one drop
-#   .\build-webrtc.ps1 -SkipAcquire                      # rebuild an existing checkout
+#   .\build.ps1                                   # everything, into C:\webrtc
+#   .\build.ps1 -Arch x64 -Configuration Release  # one drop
+#   .\build.ps1 -SkipAcquire                      # rebuild an existing checkout
 #
 # The fork covers src only. build/, third_party/ and two of its sub-repositories are managed by
 # gclient and cannot be forked conveniently, so their changes live in patches/ and are applied
@@ -156,4 +156,4 @@ try {
     }
 } finally { Pop-Location }
 
-"`nDone. Package with:  .\pack-webrtc.ps1 -WebRtcSrc $Src -Version <date> -OutDir .\artifacts"
+"`nDone. Package with:  .\pack.ps1 -WebRtcSrc $Src -Version <date> -OutDir .\artifacts"

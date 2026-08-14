@@ -14,8 +14,8 @@ hold the resulting archives. Unigram consumes those through vcpkg overlay ports 
 demand for the architecture being built, verified by SHA512 and cached.
 
 ```
-libvlc/    build.ps1  plugins-cache.ps1  pack-libvlc.ps1  VideoLAN.LibVLC.UWP.nuspec
-webrtc/    build-webrtc.ps1  pack-webrtc.ps1  patches/
+libvlc/    build.ps1  pack.ps1  plugins-cache.ps1  VideoLAN.LibVLC.UWP.nuspec
+webrtc/    build.ps1  pack.ps1  patches/
 ```
 
 ## Releases
@@ -54,8 +54,8 @@ Source: [UnigramDev/vlc](https://github.com/UnigramDev/vlc), branch `unigram-12.
 2. Push the fork, with **no uncommitted changes** in its working tree.
 3. Package each architecture:
    ```powershell
-   .\libvlc\pack-libvlc.ps1 -VlcDir <unigram>\Libraries\vlc -Arch x64   -Version 3.0.23 -OutFile libvlc-3.0.23-x64-uwp.zip
-   .\libvlc\pack-libvlc.ps1 -VlcDir <unigram>\Libraries\vlc -Arch arm64 -Version 3.0.23 -OutFile libvlc-3.0.23-arm64-uwp.zip
+   .\libvlc\pack.ps1 -VlcDir <unigram>\Libraries\vlc -Arch x64   -Version 3.0.23 -OutFile libvlc-3.0.23-x64-uwp.zip
+   .\libvlc\pack.ps1 -VlcDir <unigram>\Libraries\vlc -Arch arm64 -Version 3.0.23 -OutFile libvlc-3.0.23-arm64-uwp.zip
    ```
    The file list is read from `VideoLAN.LibVLC.UWP.nuspec`: the curated plugin set plus the
    generated `plugins.dat` cache. It is not duplicated in the script.
@@ -73,10 +73,10 @@ patches, 211 lines across 11 files.
 1. Fetch, patch and build — one script does all three. The fork commit is **pinned by SHA** at the
    top of it; update it when the fork moves.
    ```powershell
-   .\webrtc\build-webrtc.ps1                                    # everything, into C:\webrtc
-   .\webrtc\build-webrtc.ps1 -Root D:\webrtc                    # somewhere with room
-   .\webrtc\build-webrtc.ps1 -Arch x64 -Configuration Release   # one drop
-   .\webrtc\build-webrtc.ps1 -SkipAcquire                       # rebuild an existing checkout
+   .\webrtc\build.ps1                                    # everything, into C:\webrtc
+   .\webrtc\build.ps1 -Root D:\webrtc                    # somewhere with room
+   .\webrtc\build.ps1 -Arch x64 -Configuration Release   # one drop
+   .\webrtc\build.ps1 -SkipAcquire                       # rebuild an existing checkout
    ```
    Every step is re-runnable: an existing depot_tools or checkout is reused, and an
    already-applied patch is detected and skipped rather than failing.
@@ -87,14 +87,14 @@ patches, 211 lines across 11 files.
 2. Push the fork.
 3. Package everything at once:
    ```powershell
-   .\webrtc\pack-webrtc.ps1 -WebRtcSrc C:\webrtc\src -Version 2026-08-11 -OutDir .\artifacts
+   .\webrtc\pack.ps1 -WebRtcSrc C:\webrtc\src -Version 2026-08-11 -OutDir .\artifacts
    ```
 4. Create the release, attach the five archives, and record the commit.
 5. Update the SHA512s in Unigram's `Libraries/vcpkg-ports/webrtc/portfile.cmake`.
 
 The header archive carries only the checkout root plus the `third_party` directories that
 Unigram's compilation actually reaches — 7,600 files instead of 22,100, 18 MB instead of 192 MB.
-The list is at the top of `pack-webrtc.ps1`. If a build ever fails on a missing header, add its
+The list is at the top of `pack.ps1`. If a build ever fails on a missing header, add its
 directory there and repackage; the failure is a compile error naming the file, so it is
 self-diagnosing.
 
