@@ -14,7 +14,7 @@ hold the resulting archives. Unigram consumes those through vcpkg overlay ports 
 demand for the architecture being built, verified by SHA512 and cached.
 
 ```
-libvlc/    build.ps1  pack.ps1  plugins-cache.ps1  plugins.txt
+libvlc/    build.ps1  pack.ps1  plugins-cache.ps1  plugins.txt  revision.txt
 webrtc/    build.ps1  pack.ps1  patches/
 ```
 
@@ -47,15 +47,19 @@ is a local working tree does not satisfy it.
 Source: [UnigramDev/vlc](https://github.com/UnigramDev/vlc), branch `unigram-12.7.5`.
 
 1. Build the fork. `build.ps1` runs the VideoLAN Docker image against the fork, which already
-   carries its changes as commits; it currently expects to run from the Unigram checkout's `Libraries/vlc`.
+   carries its changes as commits, and generates the plugin cache afterwards.
    ```powershell
-   .\build.ps1 -arch x64,ARM64
+   .\libvlc\build.ps1                            # both architectures, ..\..\vlc
+   .\libvlc\build.ps1 -VlcSrc D:\vlc -Arch x64
    ```
+   The checkout is a plain clone of the fork, expected as a sibling of this repository. It is not
+   a submodule of Unigram: the app consumes the published archives, so nothing there needs 9 GB of
+   VLC source.
 2. Push the fork, with **no uncommitted changes** in its working tree.
 3. Package each architecture:
    ```powershell
-   .\libvlc\pack.ps1 -VlcDir <unigram>\Libraries\vlc -Arch x64   -Version 3.0.23 -OutFile libvlc-3.0.23-x64-uwp.zip
-   .\libvlc\pack.ps1 -VlcDir <unigram>\Libraries\vlc -Arch arm64 -Version 3.0.23 -OutFile libvlc-3.0.23-arm64-uwp.zip
+   .\libvlc\pack.ps1 -VlcSrc C:\Source\vlc -Arch x64   -Version 3.0.23 -OutFile libvlc-3.0.23-x64-uwp.zip
+   .\libvlc\pack.ps1 -VlcSrc C:\Source\vlc -Arch arm64 -Version 3.0.23 -OutFile libvlc-3.0.23-arm64-uwp.zip
    ```
    Headers, import libraries and the two DLLs are taken wholesale from the built tree. The only
    selection is `plugins.txt`: the build produces about 320 plugins and Unigram loads 36.

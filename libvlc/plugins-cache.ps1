@@ -25,16 +25,17 @@
     so this must run on every build, and the timestamps have to survive packaging.
 #>
 param(
-    [string]$Root = $PSScriptRoot,
-    [string]$Nuspec = "VideoLAN.LibVLC.UWP.nuspec"
+    # The VLC checkout, holding win64-uwp and winarm64-uwp.
+    [string]$VlcSrc = (Join-Path $PSScriptRoot '..\..\vlc'),
+    [string]$PluginList = (Join-Path $PSScriptRoot 'plugins.txt')
 )
 
 $ErrorActionPreference = "Stop"
 
 function Get-ArchDirectory {
-    param([string]$Root, [string]$Arch)
+    param([string]$VlcSrc, [string]$Arch)
 
-    $parent = Join-Path $Root "vlc\$Arch"
+    $parent = Join-Path $VlcSrc $Arch
     if (-not (Test-Path $parent)) {
         throw "Build output not found: $parent"
     }
@@ -49,22 +50,17 @@ function Get-ArchDirectory {
 }
 
 function Get-ShippedPlugins {
-    param([string]$NuspecPath)
+    param([string]$ListPath)
 
-    # Only the plugins the package actually ships belong in the cache; libvlc would otherwise
-    # record entries for files that are not there.
-    [xml]$doc = Get-Content -LiteralPath $NuspecPath -Raw
-
-    $paths = foreach ($file in $doc.package.files.file) {
-        $target = $file.target
-        if ($target -match '^build/win10-x64/plugins/(.+\.dll)$') {
-            $Matches[1] -replace '/', '\'
-        }
-    }
+    # Only the plugins that actually ship belong in the cache; libvlc would otherwise record
+    # entries for files that are not there.
+    $paths = Get-Content -LiteralPath $ListPath |
+        Where-Object { $_.Trim() -and -not $_.StartsWith('#') } |
+        ForEach-Object { $_.Trim() -replace '/', '\' }
 
     $paths = @($paths | Sort-Object -Unique)
     if ($paths.Count -eq 0) {
-        throw "No plugin entries found in $NuspecPath"
+        throw "No plugins listed in $ListPath"
     }
 
     return $paths
@@ -218,7 +214,7 @@ function Convert-PluginCache {
         # Sanity check before writing: the size recorded here must be the x64 file's size. If it
         # is not, the offset is wrong and patching would corrupt the cache.
         $x64Size = [BitConverter]::ToUInt64($bytes, $trailer + 8)
-        $expected = (Get-Item (Join-Path (Join-Path (Get-ArchDirectory -Root $Root -Arch "win64-uwp") "plugins") $rel)).Length
+        $expected = (Get-Item (Join-Path (Join-Path (Get-ArchDirectory -VlcSrc $VlcSrc -Arch "win64-uwp") "plugins") $rel)).Length
         if ($x64Size -ne $expected) {
             throw "Offset check failed for '$rel': cache records $x64Size bytes, x64 file is $expected"
         }
@@ -233,17 +229,16 @@ function Convert-PluginCache {
     Write-Host "Wrote $OutFile ($patched plugins re-stamped)"
 }
 
-$nuspecPath = Join-Path $Root $Nuspec
-$plugins = Get-ShippedPlugins -NuspecPath $nuspecPath
-Write-Host "Nuspec ships $($plugins.Count) plugins"
+$plugins = Get-ShippedPlugins -ListPath $PluginList
+Write-Host "Shipping $($plugins.Count) plugins"
 
-$x64Dir = Get-ArchDirectory -Root $Root -Arch "win64-uwp"
-$cacheGen = Join-Path $Root "vlc\win64-uwp\bin\.libs\vlc-cache-gen.exe"
+$x64Dir = Get-ArchDirectory -VlcSrc $VlcSrc -Arch "win64-uwp"
+$cacheGen = Join-Path $VlcSrc "win64-uwp\bin\.libs\vlc-cache-gen.exe"
 if (-not (Test-Path $cacheGen)) {
     throw "vlc-cache-gen.exe not found at $cacheGen"
 }
 
-New-PluginCache -InstallDir $x64Dir -Plugins $plugins -CacheGen $cacheGen -OutFile (Join-Path $Root "plugins-x64.dat")
+New-PluginCache -InstallDir $x64Dir -Plugins $plugins -CacheGen $cacheGen -OutFile (Join-Path $VlcSrc "plugins-x64.dat")
 
-$armDir = Get-ArchDirectory -Root $Root -Arch "winarm64-uwp"
-Convert-PluginCache -SourceCache (Join-Path $Root "plugins-x64.dat") -InstallDir $armDir -Plugins $plugins -OutFile (Join-Path $Root "plugins-arm64.dat")
+$armDir = Get-ArchDirectory -VlcSrc $VlcSrc -Arch "winarm64-uwp"
+Convert-PluginCache -SourceCache (Join-Path $VlcSrc "plugins-x64.dat") -InstallDir $armDir -Plugins $plugins -OutFile (Join-Path $VlcSrc "plugins-arm64.dat")
