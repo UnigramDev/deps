@@ -64,6 +64,9 @@ foreach ($d in $thirdParty) {
 #    step 2 already provides.
 Copy-Headers (Join-Path $WebRtcSrc 'third_party\abseil-cpp') $null
 
+# The port installs this as the package copyright, so a headers archive without it fails at
+# vcpkg_install_copyright rather than at download.
+Copy-Item (Join-Path $WebRtcSrc 'LICENSE') (Join-Path $staging 'LICENSE')
 Set-Content -Path (Join-Path $staging 'REVISION') -Value (git -C $WebRtcSrc rev-parse HEAD)
 "headers: {0:N0} files" -f $script:copied
 New-Archive $staging "webrtc-$Version-headers.zip"
