@@ -72,7 +72,7 @@ Source: [UnigramDev/webrtc-uwp](https://github.com/UnigramDev/webrtc-uwp), branc
 
 The fork covers `src` only. `build/`, `third_party/` and two of its sub-repositories are managed
 by gclient and cannot be forked conveniently, so their changes live in `webrtc/patches/` — five
-patches, 211 lines across 11 files.
+patches, 245 lines across 12 files.
 
 1. Fetch, patch and build — one script does all three. The fork commit is **pinned by SHA** at the
    top of it; update it when the fork moves.
@@ -85,9 +85,9 @@ patches, 211 lines across 11 files.
    Every step is re-runnable: an existing depot_tools or checkout is reused, and an
    already-applied patch is detected and skipped rather than failing.
 
-   It builds with **Visual Studio 2022**, located through vswhere — that is the toolchain this has
-   been built and shipped with, and it has never been built with 18. The resulting static library
-   links cleanly into projects built with the newer v145 toolset.
+   It builds with **Visual Studio 2022 or 18**, whichever vswhere reports as newest. Both produce
+   a clean build; 18 is passed through `vs2022_install`, which webrtc's toolchain detection honours
+   even though it does not know the year.
 2. Push the fork.
 3. Package everything at once:
    ```powershell

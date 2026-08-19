@@ -48,23 +48,14 @@ function Use-Patch([string]$Repo, [string]$Patch) {
     } finally { Pop-Location }
 }
 
-# WebRTC is built with Visual Studio 2022; it has never been built with 18. vswhere rather than a
-# hardcoded path, so Professional and Enterprise installs work too.
-function Get-VisualStudio2022 {
+# Visual Studio 2022 or 18, whichever is newest; both build it. vswhere rather than a hardcoded
+# path, so Professional and Enterprise installs work too.
+function Get-VisualStudio {
     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
     if (-not (Test-Path $vswhere)) { throw "vswhere not found at $vswhere" }
-    $path = & $vswhere -version '[17.0,18.0)' -latest -products * -property installationPath
-    if (-not $path) { throw 'Visual Studio 2022 is required to build WebRTC, and was not found.' }
+    $path = & $vswhere -version '[17.0,19.0)' -latest -products * -property installationPath
+    if (-not $path) { throw 'Visual Studio 2022 or newer is required to build WebRTC, and was not found.' }
     return $path
-}
-
-# VsDevCmd only sets variables in the cmd session that runs it, so run it and import what it left.
-function Import-DeveloperEnvironment([string]$VsPath, [string]$HostArch) {
-    $bat = Join-Path $VsPath 'Common7\Tools\VsDevCmd.bat'
-    if (-not (Test-Path $bat)) { throw "VsDevCmd.bat not found at $bat" }
-    cmd /c "`"$bat`" -arch=$HostArch -no_logo && set" | ForEach-Object {
-        if ($_ -match '^([^=]+)=(.*)$') { Set-Item -Path "env:$($Matches[1])" -Value $Matches[2] }
-    }
 }
 
 "Root:        $Root"
@@ -126,10 +117,14 @@ if (-not $SkipAcquire) {
     Use-Patch (Join-Path $Src 'third_party\libyuv')        (Join-Path $PatchDir 'third_party\libyuv\fix.patch')
 }
 
-$vs = Get-VisualStudio2022
-$hostArch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'amd64' }
-"`nUsing $vs (host $hostArch)"
-Import-DeveloperEnvironment $vs $hostArch
+$vs = Get-VisualStudio
+"`nUsing $vs"
+
+# build/vs_toolchain.py maps only the years 2019 and 2022, but vs<year>_install short-circuits both
+# the version detection and the path lookup, so pointing it at an 18 install is enough and
+# GYP_MSVS_VERSION stays at 2022. It also runs vcvarsall itself after clearing
+# VSINSTALLDIR/INCLUDE/LIB, so a developer environment imported here would be discarded.
+$env:vs2022_install = $vs
 
 Push-Location $Src
 try {

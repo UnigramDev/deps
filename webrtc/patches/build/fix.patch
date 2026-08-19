@@ -12,3 +12,37 @@ index 973d8bcbd..3416bc8b5 100644
      } else {
        cflags_cc += [ "/std:c++20" ]
      }
+diff --git a/vs_toolchain.py b/vs_toolchain.py
+index a9cd6f03d..ff41c3923 100755
+--- a/vs_toolchain.py
++++ b/vs_toolchain.py
+@@ -288,18 +288,20 @@ def _CopyUCRTRuntime(target_dir, source_dir, target_cpu, suffix):
+   if target_cpu == 'arm64':
+     # Windows ARM64 VCRuntime is located at {toolchain_root}/VC/Redist/MSVC/
+     # {x.y.z}/[debug_nonredist/]arm64/Microsoft.VC14x.CRT/.
+-    # Select VC toolset directory based on Visual Studio version
+     vc_redist_root = FindVCRedistRoot()
++    # The redist folder is named after the toolset (Microsoft.VC143.CRT,
++    # Microsoft.VC145.CRT, ...), a version MSVS_VERSIONS above stops tracking
++    # after VS 2022. Take whatever the install actually ships.
+     if suffix.startswith('.'):
+-      vc_toolset_dir = 'Microsoft.{}.CRT' \
+-         .format(MSVC_TOOLSET_VERSION[GetVisualStudioVersion()])
+-      source_dir = os.path.join(vc_redist_root,
+-                                'arm64', vc_toolset_dir)
++      arm64_root = os.path.join(vc_redist_root, 'arm64')
++      pattern = 'Microsoft.VC*.CRT'
+     else:
+-      vc_toolset_dir = 'Microsoft.{}.DebugCRT' \
+-         .format(MSVC_TOOLSET_VERSION[GetVisualStudioVersion()])
+-      source_dir = os.path.join(vc_redist_root, 'debug_nonredist',
+-                                'arm64', vc_toolset_dir)
++      arm64_root = os.path.join(vc_redist_root, 'debug_nonredist', 'arm64')
++      pattern = 'Microsoft.VC*.DebugCRT'
++    candidates = glob.glob(os.path.join(arm64_root, pattern))
++    if not candidates:
++      raise Exception('No %s under %s' % (pattern, arm64_root))
++    source_dir = sorted(candidates)[-1]
+   file_parts = ('msvcp140', 'vccorlib140', 'vcruntime140')
+   if target_cpu == 'x64' and GetVisualStudioVersion() != '2017':
+     file_parts = file_parts + ('vcruntime140_1', )
