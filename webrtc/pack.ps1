@@ -10,6 +10,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $WebRtcSrc = (Resolve-Path $WebRtcSrc).Path.TrimEnd('\')
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+# Absolute: ZipFile resolves a relative path against the process working directory, which is
+# not PowerShell's current location.
+$OutDir = (Resolve-Path $OutDir).Path
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 # third_party is 18,167 of the 22,137 headers and 163 of the 192 MB, and almost none of it is
