@@ -1,6 +1,6 @@
 # Fetches, patches and builds WebRTC for UWP from the UnigramDev/webrtc-uwp fork.
 #
-#   .\build.ps1                                   # everything, into C:\webrtc
+#   .\build.ps1                                   # everything, into D:\webrtc
 #   .\build.ps1 -Arch x64 -Configuration Release  # one drop
 #   .\build.ps1 -SkipAcquire                      # rebuild an existing checkout
 #
@@ -9,7 +9,7 @@
 # here. Every step is re-runnable: an existing checkout is reused and an already-applied patch is
 # detected rather than failing.
 param(
-    [string]$Root = 'C:\webrtc',
+    [string]$Root = 'D:\webrtc',
     [ValidateSet('x64', 'arm64')][string[]]$Arch = @('x64', 'arm64'),
     [ValidateSet('Release', 'Debug')][string[]]$Configuration = @('Release', 'Debug'),
     [switch]$SkipAcquire

@@ -2,7 +2,7 @@
 # Belongs in UnigramDev/deps. One header archive shared by every configuration, plus one archive
 # per configuration and architecture, so a build downloads only the lib it links.
 param(
-    [Parameter(Mandatory = $true)][string]$WebRtcSrc,   # C:\webrtc\src
+    [Parameter(Mandatory = $true)][string]$WebRtcSrc,   # D:\webrtc\src
     [Parameter(Mandatory = $true)][string]$Version,     # e.g. 2026-08-11
     [Parameter(Mandatory = $true)][string]$OutDir,
     [switch]$HeadersOnly
