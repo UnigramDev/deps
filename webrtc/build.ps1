@@ -20,7 +20,7 @@ $ErrorActionPreference = 'Stop'
 # binaries. A branch name here would silently drift from what was shipped.
 $UpstreamBranch = 'branch-heads/6312'
 $ForkUrl        = 'https://github.com/UnigramDev/webrtc-uwp.git'
-$ForkCommit     = '801b01361857fd9afd40f0efd29034b0e48001c7'
+$ForkCommit     = '82db36125e98f1ce853e31263b1d4c4aaa1413c6'
 
 $PatchDir    = Join-Path $PSScriptRoot 'patches'
 $DepotTools  = Join-Path $Root 'depot_tools'
