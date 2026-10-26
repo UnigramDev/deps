@@ -1,22 +1,19 @@
 # Unigram prebuilt dependencies
 
-Two of Unigram's native dependencies are impractical to build as part of a normal checkout:
-
-| | why it is not built from source |
-|---|---|
-| **libvlc** | needs Docker and the VideoLAN contrib toolchain; an 8.8 GB submodule |
-| **webrtc** | needs depot_tools, a ~1.5 hour sync and ~20 GB of disk, for a multi-hour build |
-
-Both change a few times a year at most. This repository holds everything needed to produce them —
-the source-build scripts, the packaging scripts, and the patches webrtc needs — and its releases
-hold the resulting archives. Unigram consumes those through vcpkg overlay ports in
-`Libraries/vcpkg-ports`, so a contributor never runs any of this: the archives are downloaded on
-demand for the architecture being built, verified by SHA512 and cached.
+WebRTC is impractical to build as part of a normal Unigram checkout: it needs depot_tools, a
+~1.5 hour sync and ~20 GB of disk, for a multi-hour build, and it changes a few times a year at
+most. This repository holds everything needed to produce it — the source-build script, the
+packaging script, and the patches it needs — and its releases hold the resulting archives. Unigram
+consumes those through a vcpkg overlay port in `Libraries/vcpkg-ports`, so a contributor never runs
+any of this: the archives are downloaded on demand for the architecture being built, verified by
+SHA512 and cached.
 
 ```
-libvlc/    build.ps1  pack.ps1  plugins-cache.ps1  plugins.txt  revision.txt
 webrtc/    build.ps1  pack.ps1  patches/
 ```
+
+The `libvlc-*` releases are left in place for the Unigram versions that shipped them; Unigram no
+longer uses libvlc, and the scripts that built them are in this repository's history.
 
 ## Releases
 
@@ -24,9 +21,6 @@ Tags are `<name>-<upstream version>-<n>`, where `n` increments on any repackage 
 change the upstream version. That maps onto vcpkg's `version` and `port-version`.
 
 ```
-libvlc-3.0.23-1      libvlc-3.0.23-x64-uwp.zip                14 MB
-                     libvlc-3.0.23-arm64-uwp.zip              12 MB
-
 webrtc-2026-08-11-1  webrtc-2026-08-11-headers.zip            18 MB   (shared by all configurations)
                      webrtc-2026-08-11-x64-uwp-release.zip    85 MB
                      webrtc-2026-08-11-x64-uwp-debug.zip     135 MB
@@ -38,33 +32,7 @@ Headers and libraries are separate archives for webrtc so that a build downloads
 configuration it links, rather than all four.
 
 **Every release description must name the exact source commit it was built from**, and the fork
-must be pushed first. For libvlc this is a licence obligation, not a convention: LGPL-2.1 requires
-the corresponding source to be available to anyone who receives the binary. A release whose source
-is a local working tree does not satisfy it.
-
-## libvlc
-
-Source: [UnigramDev/vlc](https://github.com/UnigramDev/vlc), branch `unigram-12.7.5`.
-
-1. Build the fork. `build.ps1` runs the VideoLAN Docker image against the fork, which already
-   carries its changes as commits, and generates the plugin cache afterwards.
-   ```powershell
-   .\libvlc\build.ps1                            # both architectures, ..\..\vlc
-   .\libvlc\build.ps1 -VlcSrc D:\vlc -Arch x64
-   ```
-   The checkout is a plain clone of the fork, expected as a sibling of this repository. It is not
-   a submodule of Unigram: the app consumes the published archives, so nothing there needs 9 GB of
-   VLC source.
-2. Push the fork, with **no uncommitted changes** in its working tree.
-3. Package each architecture:
-   ```powershell
-   .\libvlc\pack.ps1 -VlcSrc C:\Source\vlc -Arch x64   -Version 3.0.23 -OutFile libvlc-3.0.23-x64-uwp.zip
-   .\libvlc\pack.ps1 -VlcSrc C:\Source\vlc -Arch arm64 -Version 3.0.23 -OutFile libvlc-3.0.23-arm64-uwp.zip
-   ```
-   Headers, import libraries and the two DLLs are taken wholesale from the built tree. The only
-   selection is `plugins.txt`: the build produces about 320 plugins and Unigram loads 36.
-4. Create the release, attach both archives, and record the commit.
-5. Update the SHA512s in Unigram's `Libraries/vcpkg-ports/libvlc/portfile.cmake`.
+must be pushed first. A release whose source is a local working tree cannot be reproduced.
 
 ## webrtc
 
