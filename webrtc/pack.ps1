@@ -76,13 +76,16 @@ New-Archive $staging "webrtc-$Version-headers.zip"
 
 if ($HeadersOnly) { return }
 
-foreach ($cfg in @('Release', 'Debug')) {
-    foreach ($arch in @('x64', 'arm64')) {
-        $lib = Join-Path $WebRtcSrc "out\msvc\uwp\$cfg\$arch\obj\webrtc.lib"
-        if (-not (Test-Path $lib)) { Write-Warning "missing $lib"; continue }
-        $s = Join-Path ([System.IO.Path]::GetTempPath()) ("webrtc-l-" + [System.Guid]::NewGuid().ToString('N'))
-        New-Item -ItemType Directory -Force -Path (Join-Path $s 'lib') | Out-Null
-        Copy-Item $lib (Join-Path $s 'lib\webrtc.lib')
-        New-Archive $s ("webrtc-$Version-$arch-uwp-" + $cfg.ToLower() + ".zip")
+# The target is the OS of the vcpkg triplet that links the archive: -uwp or -windows.
+foreach ($target in @('uwp', 'windows')) {
+    foreach ($cfg in @('Release', 'Debug')) {
+        foreach ($arch in @('x64', 'arm64')) {
+            $lib = Join-Path $WebRtcSrc "out\msvc\$target\$cfg\$arch\obj\webrtc.lib"
+            if (-not (Test-Path $lib)) { Write-Warning "missing $lib"; continue }
+            $s = Join-Path ([System.IO.Path]::GetTempPath()) ("webrtc-l-" + [System.Guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Force -Path (Join-Path $s 'lib') | Out-Null
+            Copy-Item $lib (Join-Path $s 'lib\webrtc.lib')
+            New-Archive $s ("webrtc-$Version-$arch-$target-" + $cfg.ToLower() + ".zip")
+        }
     }
 }

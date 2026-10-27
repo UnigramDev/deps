@@ -1,0 +1,16 @@
+diff --git a/config/win/BUILD.gn b/config/win/BUILD.gn
+index 39da64044..872f25149 100644
+--- a/config/win/BUILD.gn
++++ b/config/win/BUILD.gn
+@@ -495,8 +495,9 @@ config("default_crt") {
+       # CRT in Visual Studio releases related to Windows store applications.
+       configs = [ ":dynamic_crt" ]
+     } else {
+-      # Desktop Windows: static CRT.
+-      configs = [ ":static_crt" ]
++      # Desktop Windows: the dynamic CRT too, which is what the vcpkg
++      # -windows triplets that webrtc.lib is linked with build against.
++      configs = [ ":dynamic_crt" ]
+     }
+   }
+ }

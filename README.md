@@ -29,7 +29,8 @@ webrtc-2026-08-11-1  webrtc-2026-08-11-headers.zip            18 MB   (shared by
 ```
 
 Headers and libraries are separate archives for webrtc so that a build downloads only the
-configuration it links, rather than all four.
+configuration it links, rather than all of them. From 2026-10-26 a release also carries the four
+libraries as `-windows-`, built for desktop, which the vcpkg `-windows` triplets link.
 
 **Every release description must name the exact source commit it was built from**, and the fork
 must be pushed first. A release whose source is a local working tree cannot be reproduced.
@@ -39,17 +40,21 @@ must be pushed first. A release whose source is a local working tree cannot be r
 Source: [UnigramDev/webrtc-uwp](https://github.com/UnigramDev/webrtc-uwp), branch `m123`.
 
 The fork covers `src` only. `build/`, `third_party/` and two of its sub-repositories are managed
-by gclient and cannot be forked conveniently, so their changes live in `webrtc/patches/` — five
-patches, 245 lines across 12 files.
+by gclient and cannot be forked conveniently, so their changes live in `webrtc/patches/` — six
+patches.
 
 1. Fetch, patch and build — one script does all three. The fork commit is **pinned by SHA** at the
    top of it; update it when the fork moves.
    ```powershell
    .\webrtc\build.ps1                                    # everything, into C:\webrtc
    .\webrtc\build.ps1 -Root D:\webrtc                    # somewhere with room
-   .\webrtc\build.ps1 -Arch x64 -Configuration Release   # one drop
+   .\webrtc\build.ps1 -Target uwp -Arch x64 -Configuration Release   # one drop
    .\webrtc\build.ps1 -SkipAcquire                       # rebuild an existing checkout
    ```
+   `-Target` is `uwp` (`target_os="winuwp"`), `windows` (`target_os="win"`), or both by default.
+   Both link the dynamic CRT, which for desktop takes `patches/build/dynamic_crt.patch`: its
+   default is the static one, and the code webrtc.lib is linked into is built `/MD`.
+
    Every step is re-runnable: an existing depot_tools or checkout is reused, and an
    already-applied patch is detected and skipped rather than failing.
 
@@ -61,7 +66,7 @@ patches, 245 lines across 12 files.
    ```powershell
    .\webrtc\pack.ps1 -WebRtcSrc C:\webrtc\src -Version 2026-08-11 -OutDir .\artifacts
    ```
-4. Create the release, attach the five archives, and record the commit.
+4. Create the release, attach the nine archives, and record the commit.
 5. Update the SHA512s in Unigram's `Libraries/vcpkg-ports/webrtc/portfile.cmake`.
 
 The header archive carries only the checkout root plus the `third_party` directories that

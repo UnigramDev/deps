@@ -1,8 +1,11 @@
-# Fetches, patches and builds WebRTC for UWP from the UnigramDev/webrtc-uwp fork.
+# Fetches, patches and builds WebRTC for UWP and desktop Windows from the UnigramDev/webrtc-uwp fork.
 #
-#   .\build.ps1                                   # everything, into D:\webrtc
-#   .\build.ps1 -Arch x64 -Configuration Release  # one drop
-#   .\build.ps1 -SkipAcquire                      # rebuild an existing checkout
+#   .\build.ps1                                                  # everything, into D:\webrtc
+#   .\build.ps1 -Target uwp -Arch x64 -Configuration Release     # one drop
+#   .\build.ps1 -SkipAcquire                                     # rebuild an existing checkout
+#
+# uwp is what the vcpkg -uwp triplets link, windows what the -windows ones do. Both come from the
+# same checkout with the same arguments bar target_os, and both use the dynamic CRT.
 #
 # The fork covers src only. build/, third_party/ and two of its sub-repositories are managed by
 # gclient and cannot be forked conveniently, so their changes live in patches/ and are applied
@@ -10,6 +13,7 @@
 # detected rather than failing.
 param(
     [string]$Root = 'D:\webrtc',
+    [ValidateSet('uwp', 'windows')][string[]]$Target = @('uwp', 'windows'),
     [ValidateSet('x64', 'arm64')][string[]]$Arch = @('x64', 'arm64'),
     [ValidateSet('Release', 'Debug')][string[]]$Configuration = @('Release', 'Debug'),
     [switch]$SkipAcquire
@@ -20,7 +24,7 @@ $ErrorActionPreference = 'Stop'
 # binaries. A branch name here would silently drift from what was shipped.
 $UpstreamBranch = 'branch-heads/6312'
 $ForkUrl        = 'https://github.com/UnigramDev/webrtc-uwp.git'
-$ForkCommit     = 'b6b957f2ac36068e52e01c5a4d43cb0c0f2edf0d'
+$ForkCommit     = 'a81810633cf6f554441a14269da5898984ce2eb1'
 
 $PatchDir    = Join-Path $PSScriptRoot 'patches'
 $DepotTools  = Join-Path $Root 'depot_tools'
@@ -105,6 +109,8 @@ if (-not $SkipAcquire) {
 
     "`nApplying patches..."
     Use-Patch (Join-Path $Src 'build')                     (Join-Path $PatchDir 'build\fix.patch')
+    # A non-component desktop build otherwise links the static CRT, which /MD code cannot take.
+    Use-Patch (Join-Path $Src 'build')                     (Join-Path $PatchDir 'build\dynamic_crt.patch')
 
     # PROCESSOR_ARCHITECTURE rather than wmic, which is deprecated and already absent from some
     # Windows 11 installs -- there it returned nothing and this patch was skipped in silence.
@@ -128,25 +134,28 @@ $env:vs2022_install = $vs
 
 Push-Location $Src
 try {
-    foreach ($a in $Arch) {
-        foreach ($c in $Configuration) {
-            $isDebug = if ($c -eq 'Release') { 'false' } else { 'true' }
-            $out = "out\msvc\uwp\$c\$a"
+    foreach ($t in $Target) {
+        foreach ($a in $Arch) {
+            foreach ($c in $Configuration) {
+                $isDebug = if ($c -eq 'Release') { 'false' } else { 'true' }
+                $os = if ($t -eq 'uwp') { 'winuwp' } else { 'win' }
+                $out = "out\msvc\$t\$c\$a"
 
-            "`nConfiguring $a $c..."
-            $gnArgs = "is_debug=$isDebug use_lld=false is_clang=false rtc_include_tests=false " +
-                      "rtc_build_tools=false rtc_win_video_capture_winrt=true target_os=\`"winuwp\`" " +
-                      "rtc_build_examples=false rtc_win_use_mf_h264=true rtc_enable_protobuf=false " +
-                      "rtc_disable_metrics=true rtc_include_dav1d_in_internal_decoder_factory=false " +
-                      "treat_warnings_as_errors=false use_custom_libcxx=false fatal_linker_warnings=false " +
-                      "target_cpu=\`"$a\`""
-            Invoke-Checked "gn gen $a $c" { & gn gen --ide=vs2022 $out --filters=//:webrtc "--args=$gnArgs" }
+                "`nConfiguring $t $a $c..."
+                $gnArgs = "is_debug=$isDebug use_lld=false is_clang=false rtc_include_tests=false " +
+                          "rtc_build_tools=false rtc_win_video_capture_winrt=true target_os=\`"$os\`" " +
+                          "rtc_build_examples=false rtc_win_use_mf_h264=true rtc_enable_protobuf=false " +
+                          "rtc_disable_metrics=true rtc_include_dav1d_in_internal_decoder_factory=false " +
+                          "treat_warnings_as_errors=false use_custom_libcxx=false fatal_linker_warnings=false " +
+                          "target_cpu=\`"$a\`""
+                Invoke-Checked "gn gen $t $a $c" { & gn gen --ide=vs2022 $out --filters=//:webrtc "--args=$gnArgs" }
 
-            "`nBuilding $a $c..."
-            Invoke-Checked "ninja $a $c" { & ninja -C $out }
+                "`nBuilding $t $a $c..."
+                Invoke-Checked "ninja $t $a $c" { & ninja -C $out }
 
-            $lib = Join-Path $Src "$out\obj\webrtc.lib"
-            "  {0} -> {1:N0} MB" -f $lib, ((Get-Item $lib).Length / 1MB)
+                $lib = Join-Path $Src "$out\obj\webrtc.lib"
+                "  {0} -> {1:N0} MB" -f $lib, ((Get-Item $lib).Length / 1MB)
+            }
         }
     }
 } finally { Pop-Location }
