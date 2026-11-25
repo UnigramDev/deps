@@ -22,9 +22,9 @@ $ErrorActionPreference = 'Stop'
 
 # Pinned exactly: the upstream release branch, and the fork commit built into the published
 # binaries. A branch name here would silently drift from what was shipped.
-$UpstreamBranch = 'branch-heads/6312'
+$UpstreamBranch = 'branch-heads/8154'
 $ForkUrl        = 'https://github.com/UnigramDev/webrtc-uwp.git'
-$ForkCommit     = 'a81810633cf6f554441a14269da5898984ce2eb1'
+$ForkCommit     = '6408c6fa21a8333a8a79d995db830a8d3cec4e41'
 
 $PatchDir    = Join-Path $PSScriptRoot 'patches'
 $DepotTools  = Join-Path $Root 'depot_tools'
@@ -52,13 +52,15 @@ function Use-Patch([string]$Repo, [string]$Patch) {
     } finally { Pop-Location }
 }
 
-# Visual Studio 2022 or 18, whichever is newest; both build it. vswhere rather than a hardcoded
-# path, so Professional and Enterprise installs work too.
+# Visual Studio 18, which build/vs_toolchain.py calls 2026. vswhere rather than a hardcoded path,
+# so Professional and Enterprise installs work too. The build also needs the Windows SDK that
+# vs_toolchain.py pins (SDK_VERSION, 10.0.28000.0 on this branch): m159 defines an NTDDI_VERSION
+# older SDKs do not know, and every Windows header then fails.
 function Get-VisualStudio {
     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
     if (-not (Test-Path $vswhere)) { throw "vswhere not found at $vswhere" }
-    $path = & $vswhere -version '[17.0,19.0)' -latest -products * -property installationPath
-    if (-not $path) { throw 'Visual Studio 2022 or newer is required to build WebRTC, and was not found.' }
+    $path = & $vswhere -version '[18.0,19.0)' -latest -products * -property installationPath
+    if (-not $path) { throw 'Visual Studio 18 is required to build WebRTC, and was not found.' }
     return $path
 }
 
@@ -80,7 +82,7 @@ if (-not $SkipAcquire) {
 
 $env:PATH = "$DepotTools;$env:PATH"
 $env:DEPOT_TOOLS_WIN_TOOLCHAIN = '0'
-$env:GYP_MSVS_VERSION = '2022'
+$env:GYP_MSVS_VERSION = '2026'
 
 if (-not $SkipAcquire) {
     if (-not (Test-Path $Src)) {
@@ -108,9 +110,11 @@ if (-not $SkipAcquire) {
     } finally { Pop-Location }
 
     "`nApplying patches..."
-    Use-Patch (Join-Path $Src 'build')                     (Join-Path $PatchDir 'build\fix.patch')
     # A non-component desktop build otherwise links the static CRT, which /MD code cannot take.
     Use-Patch (Join-Path $Src 'build')                     (Join-Path $PatchDir 'build\dynamic_crt.patch')
+    # ARM64 otherwise defines __ARM_NEON__ for MSVC too, and libyuv and boringssl then compile
+    # their GCC-only NEON paths.
+    Use-Patch (Join-Path $Src 'build')                     (Join-Path $PatchDir 'build\msvc_neon.patch')
 
     # PROCESSOR_ARCHITECTURE rather than wmic, which is deprecated and already absent from some
     # Windows 11 installs -- there it returned nothing and this patch was skipped in silence.
@@ -119,18 +123,14 @@ if (-not $SkipAcquire) {
     }
 
     Use-Patch (Join-Path $Src 'third_party')               (Join-Path $PatchDir 'third_party\fix.patch')
-    Use-Patch (Join-Path $Src 'third_party\boringssl\src') (Join-Path $PatchDir 'third_party\string.patch')
-    Use-Patch (Join-Path $Src 'third_party\libyuv')        (Join-Path $PatchDir 'third_party\libyuv\fix.patch')
 }
 
 $vs = Get-VisualStudio
 "`nUsing $vs"
 
-# build/vs_toolchain.py maps only the years 2019 and 2022, but vs<year>_install short-circuits both
-# the version detection and the path lookup, so pointing it at an 18 install is enough and
-# GYP_MSVS_VERSION stays at 2022. It also runs vcvarsall itself after clearing
-# VSINSTALLDIR/INCLUDE/LIB, so a developer environment imported here would be discarded.
-$env:vs2022_install = $vs
+# build/vs_toolchain.py runs vcvarsall itself after clearing VSINSTALLDIR/INCLUDE/LIB, so a
+# developer environment imported here would be discarded; vs2026_install is how it finds VS.
+$env:vs2026_install = $vs
 
 Push-Location $Src
 try {
@@ -142,11 +142,15 @@ try {
                 $out = "out\msvc\$t\$c\$a"
 
                 "`nConfiguring $t $a $c..."
+                # Upstream builds only with clang-cl now. With MSVC, each of these turns off a default
+                # MSVC cannot build: Chromium's libc++ and compiler-rt atomics, C++23 (Unigram's
+                # native projects are C++20), and webrtc's Rust parts, which have C++ fallbacks.
                 $gnArgs = "is_debug=$isDebug use_lld=false is_clang=false rtc_include_tests=false " +
                           "rtc_build_tools=false rtc_win_video_capture_winrt=true target_os=\`"$os\`" " +
                           "rtc_build_examples=false rtc_win_use_mf_h264=true rtc_enable_protobuf=false " +
                           "rtc_disable_metrics=true rtc_include_dav1d_in_internal_decoder_factory=false " +
-                          "treat_warnings_as_errors=false use_custom_libcxx=false fatal_linker_warnings=false " +
+                          "treat_warnings_as_errors=false use_custom_libcxx=false use_custom_libcxx_for_host=false " +
+                          "use_llvm_libatomic=false use_cxx23=false rtc_rust=false fatal_linker_warnings=false " +
                           "target_cpu=\`"$a\`""
                 Invoke-Checked "gn gen $t $a $c" { & gn gen --ide=vs2022 $out --filters=//:webrtc "--args=$gnArgs" }
 

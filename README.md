@@ -37,11 +37,12 @@ must be pushed first. A release whose source is a local working tree cannot be r
 
 ## webrtc
 
-Source: [UnigramDev/webrtc-uwp](https://github.com/UnigramDev/webrtc-uwp), branch `m123`.
+Source: [UnigramDev/webrtc-uwp](https://github.com/UnigramDev/webrtc-uwp), branch
+`telegram-uwp-m159`: Unigram's changes on top of the Telegram m159 branch, itself
+`branch-heads/8154`.
 
-The fork covers `src` only. `build/`, `third_party/` and two of its sub-repositories are managed
-by gclient and cannot be forked conveniently, so their changes live in `webrtc/patches/` — six
-patches.
+The fork covers `src` only. `build/` and `third_party/` are managed by gclient and cannot be
+forked conveniently, so their changes live in `webrtc/patches/` — four patches.
 
 1. Fetch, patch and build — one script does all three. The fork commit is **pinned by SHA** at the
    top of it; update it when the fork moves.
@@ -58,9 +59,13 @@ patches.
    Every step is re-runnable: an existing depot_tools or checkout is reused, and an
    already-applied patch is detected and skipped rather than failing.
 
-   It builds with **Visual Studio 2022 or 18**, whichever vswhere reports as newest. Both produce
-   a clean build; 18 is passed through `vs2022_install`, which webrtc's toolchain detection honours
-   even though it does not know the year.
+   It builds with **Visual Studio 18** and MSVC, passed through `vs2026_install`, and needs the
+   **Windows SDK 10.0.28000**: m159 defines an `NTDDI_VERSION` older SDKs do not know.
+
+   Upstream builds only with clang-cl now, so the gn arguments turn off what MSVC cannot build:
+   Chromium's libc++ and compiler-rt atomics, C++23 and webrtc's Rust parts. On ARM64,
+   `patches/build/msvc_neon.patch` stops `__ARM_NEON__` being defined for MSVC, which would
+   otherwise switch libyuv and BoringSSL onto GCC-only NEON code.
 2. Push the fork.
 3. Package everything at once:
    ```powershell
@@ -77,7 +82,7 @@ self-diagnosing.
 
 It deliberately does **not** ship `include/libyuv.h`. That path belongs to the standalone `libyuv`
 port, and a second copy would both conflict in vcpkg and silently decide which libyuv every
-project compiles against. WebRTC's patched libyuv stays at `third_party/libyuv/include/libyuv.h`,
+project compiles against. WebRTC's own libyuv stays at `third_party/libyuv/include/libyuv.h`,
 which is how tgcalls includes it.
 
 ## Verifying an archive

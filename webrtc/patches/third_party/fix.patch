@@ -1,8 +1,8 @@
 diff --git a/boringssl/BUILD.gn b/boringssl/BUILD.gn
-index 5691d26cfc2..b590c092743 100644
+index f4e51bfcfc4d..cac18623bc68 100644
 --- a/boringssl/BUILD.gn
 +++ b/boringssl/BUILD.gn
-@@ -109,7 +109,7 @@ if (enable_rust_boringssl) {
+@@ -113,7 +113,7 @@ if (enable_rust) {
    }
  }
  
@@ -12,10 +12,10 @@ index 5691d26cfc2..b590c092743 100644
    # BoringSSL's GAS-compatible assembly knows how to detect MSan, but the NASM
    # assembly does not, so we check for MSan explicitly.
 diff --git a/crc32c/BUILD.gn b/crc32c/BUILD.gn
-index d2a79338adf..d76633384e4 100644
+index 2e25fa78ba4e..1b6a7e84f6ea 100644
 --- a/crc32c/BUILD.gn
 +++ b/crc32c/BUILD.gn
-@@ -39,7 +39,7 @@ config("crc32c_config") {
+@@ -38,7 +38,7 @@ config("crc32c_config") {
      defines += [ "HAVE_BUILTIN_PREFETCH=0" ]
    }
  
@@ -25,33 +25,33 @@ index d2a79338adf..d76633384e4 100644
    } else {
      defines += [ "HAVE_ARM64_CRC32C=0" ]
 diff --git a/libaom/BUILD.gn b/libaom/BUILD.gn
-index 187228acbe1..9c61f0114bc 100644
+index 6684526a9887..a9f5d9ccfab9 100644
 --- a/libaom/BUILD.gn
 +++ b/libaom/BUILD.gn
-@@ -54,6 +54,8 @@ if (is_nacl) {
-   if (is_posix || is_fuchsia) {
-     # Should cover linux, fuchsia, mac, and ios.
-     os_category = "linux"
-+  } else if (is_win && current_os == "winuwp") {
-+    os_category = "win"
-   } else {  # This should only match windows.
-     os_category = current_os
-   }
+@@ -37,6 +37,8 @@ if (current_cpu == "x86") {
+ if (is_posix || is_fuchsia) {
+   # Should cover linux, fuchsia, mac, and ios.
+   os_category = "linux"
++} else if (is_win && current_os == "winuwp") {
++  os_category = "win"
+ } else {  # This should only match windows.
+   os_category = current_os
+ }
 diff --git a/libvpx/BUILD.gn b/libvpx/BUILD.gn
-index 7c2b3c3e0dc..11f71cde0fe 100644
+index 9a94190710fb..ff36f2977610 100644
 --- a/libvpx/BUILD.gn
 +++ b/libvpx/BUILD.gn
-@@ -59,6 +59,8 @@ if (is_nacl) {
-   } else if (is_posix || is_fuchsia) {
-     # Should cover linux, fuchsia, mac, and the ios simulator.
-     os_category = "linux"
-+  } else if (current_os == "winuwp") {
-+    os_category = "win"
-   } else {  # This should only match windows.
-     os_category = current_os
-   }
+@@ -67,6 +67,8 @@ if (is_ios && current_cpu == "arm") {
+ } else if (is_posix || is_fuchsia) {
+   # Should cover linux, fuchsia, mac, and the ios simulator.
+   os_category = "linux"
++} else if (current_os == "winuwp") {
++  os_category = "win"
+ } else {  # This should only match windows.
+   os_category = current_os
+ }
 diff --git a/pffft/BUILD.gn b/pffft/BUILD.gn
-index 0203735ac90..ce74d354e93 100644
+index 0de42377ad0a..bdecbe4be623 100644
 --- a/pffft/BUILD.gn
 +++ b/pffft/BUILD.gn
 @@ -7,7 +7,9 @@ import("//testing/libfuzzer/fuzzer_test.gni")

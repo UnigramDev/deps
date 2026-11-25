@@ -1,0 +1,16 @@
+diff --git a/config/compiler/BUILD.gn b/config/compiler/BUILD.gn
+index 34dfbe1b8..ec5856dcf 100644
+--- a/config/compiler/BUILD.gn
++++ b/config/compiler/BUILD.gn
+@@ -1060,7 +1060,10 @@ config("compiler") {
+   #
+   # Reduce confusion by making the __ARM_NEON__ #define always available,
+   # as NEON is a mandatory part of ARMv8 anyway.
+-  if (current_cpu == "arm64") {
++  #
++  # Not with MSVC, which defines neither: the code behind these checks is GCC
++  # inline assembly and vector extensions that MSVC cannot compile.
++  if (current_cpu == "arm64" && is_clang) {
+     defines += [ "__ARM_NEON__=1" ]
+   }
+ 
